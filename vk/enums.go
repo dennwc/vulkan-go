@@ -222,6 +222,7 @@ const (
 // Pipeline bind point (VkPipelineBindPoint).
 const (
 	BindPointGraphics uint32 = 0
+	BindPointCompute  uint32 = 1
 )
 
 // Subpass contents (VkSubpassContents).
