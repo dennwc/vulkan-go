@@ -12,6 +12,14 @@ var (
 	libVulkan             uintptr
 	vkGetInstanceProcAddr func(instance uintptr, name string) uintptr
 	vkGetDeviceProcAddr   func(device uintptr, name string) uintptr
+	// curInstance is the instance handle passed to the last LoadInstance call.
+	// Device commands are resolved through vkGetInstanceProcAddr on it: that
+	// returns loader trampolines which dispatch on the object handle at call
+	// time, so the bound function variables stay valid for every device
+	// created from the instance. vkGetDeviceProcAddr instead may return
+	// driver-private entry points that are valid only for the one device they
+	// were queried with, which breaks once more than one device is alive.
+	curInstance uintptr
 )
 
 // Load opens the Vulkan loader and binds global commands. It is idempotent.
@@ -46,9 +54,19 @@ func bindInstance(fptr any, instance uintptr, name string) {
 	purego.RegisterFunc(fptr, addr)
 }
 
-// bindDevice binds a command resolved through vkGetDeviceProcAddr.
+// bindDevice binds a device-level command through the instance recorded by
+// LoadInstance, so the bound trampoline dispatches on the handle and works
+// for every device from that instance.
 func bindDevice(fptr any, device uintptr, name string) {
-	addr := vkGetDeviceProcAddr(device, name)
+	var addr uintptr
+	if curInstance != 0 {
+		addr = vkGetInstanceProcAddr(curInstance, name)
+	}
+	if addr == 0 {
+		// Fall back to the device-level query (no instance bound yet, or an
+		// extension the instance loader does not expose).
+		addr = vkGetDeviceProcAddr(device, name)
+	}
 	if addr == 0 {
 		return
 	}
@@ -129,6 +147,7 @@ func LoadInstance(instance uintptr) {
 	bindInstance(&VkReleaseDisplayEXT, instance, "vkReleaseDisplayEXT")
 	bindInstance(&VkSubmitDebugUtilsMessageEXT, instance, "vkSubmitDebugUtilsMessageEXT")
 	bindInstance(&vkGetDeviceProcAddr, instance, "vkGetDeviceProcAddr")
+	curInstance = instance
 }
 
 // LoadInstance binds all instance-level and physical-device-level commands.
