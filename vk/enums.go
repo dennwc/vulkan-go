@@ -117,6 +117,7 @@ const (
 	MemoryDeviceLocal  uint32 = 0x00000001
 	MemoryHostVisible  uint32 = 0x00000002
 	MemoryHostCoherent uint32 = 0x00000004
+	MemoryHostCached   uint32 = 0x00000008
 )
 
 // Sample count (VkSampleCountFlagBits).
