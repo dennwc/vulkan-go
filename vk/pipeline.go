@@ -370,6 +370,13 @@ func (d Device) DestroyDescriptorPool(p DescriptorPool) {
 	}
 }
 
+// ResetDescriptorPool returns all sets allocated from the pool in one
+// operation. The pool must not be reset while any of its sets is in use.
+func (d Device) ResetDescriptorPool(pool DescriptorPool) error {
+	res := Result(vulkan.VkResetDescriptorPool(vulkan.VkDevice(d), vulkan.VkDescriptorPool(pool), 0))
+	return res.asError("vkResetDescriptorPool")
+}
+
 // AllocateDescriptorSet allocates a single descriptor set with the given layout.
 func (d Device) AllocateDescriptorSet(pool DescriptorPool, layout DescriptorSetLayout) (DescriptorSet, error) {
 	l := vulkan.VkDescriptorSetLayout(layout)
